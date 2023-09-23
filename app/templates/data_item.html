@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{data.data_item.title}}{% endblock %}
+
+{% block content %}
+<div class="data-item">
+    <div class="data-item__container">
+        <div class="data-item__image-container">
+            <div class="data-item__image">
+                <img src="{% static  data.data_item.img %}" alt="" class="data-item__img">
+            </div>
+        </div>
+        <div class="data-item__content">
+            <p class="data-item__title">{{ data.data_item.title }}</p>
+            <p class="data-item__description">{{ data.data_item.data }}...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

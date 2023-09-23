@@ -1,23 +1,23 @@
 from django.shortcuts import render
-from app.collections import services_collection, requests_collection
+from app.collections import data_collection
 
-def getServices(request):
-    query = request.GET.get('services_search')
+def getDataList(request):
+    query = request.GET.get('data_search')
     
     if query:
-        filtered_data = [service for service in services_collection if
-            query.lower() in service.title.lower() or query.lower() in str(service.cost).lower()] 
+        filtered_data = [data_item for data_item in data_collection if
+            query.lower() in data_item.title.lower() or query.lower() in str(data_item.data).lower()] 
     else:
-        filtered_data = services_collection
+        filtered_data = data_collection
         query = ""
 
-    return render(request, "services.html", {'data': {
-        'services_list':filtered_data, 
-        'search_value': query
+    return render(request, 'data_list.html', {'data': {
+        'data_list':filtered_data, 
+        'data_search': query
     }})
     
-def getService(request, id):
-    return render(request, 'service.html', {'data': {
+def getDataItem(request, id):
+    return render(request, 'data_item.html', {'data': {
         'id': id,
-        'service': services_collection[id]
+        'data_item': data_collection[id]
     }})
