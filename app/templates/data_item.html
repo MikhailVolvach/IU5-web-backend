@@ -2,6 +2,9 @@
 {% load static %}
 {% block title %}{{data.data_item.title}}{% endblock %}
 
+{% load getType %}
+{% load isInstance %}
+
 {% block content %}
 <div class="data-item">
     <div class="data-item__container">
@@ -12,7 +15,17 @@
         </div>
         <div class="data-item__content">
             <p class="data-item__title">{{ data.data_item.title }}</p>
-            <p class="data-item__description">{{ data.data_item.data }}...</p>
+            {% if data.data_item.is_iterable %}
+            <ul class="data-item__list">
+                {% for item in data.data_item.data %}
+                <li class="data-item__description">{{ item }}</li>
+                {% empty %}
+                <p class="data-item__description">Нет информации</p>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="data-item__description">{{ data.data_item.data }}</p>
+            {% endif %}
         </div>
     </div>
 </div>

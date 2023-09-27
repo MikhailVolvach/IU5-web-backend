@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from app.collections import data_collection
+from app.templatetags import getType
 
 def getDataList(request):
     query = request.GET.get('data_search')
@@ -17,7 +18,9 @@ def getDataList(request):
     }})
     
 def getDataItem(request, id):
-    return render(request, 'data_item.html', {'data': {
-        'id': id,
-        'data_item': data_collection[id]
-    }})
+    return render(request, 'data_item.html', {
+        'data': {
+            'id': id,
+            'data_item': data_collection[id],
+        }
+    })

@@ -1,0 +1,47 @@
+const readline = require('readline');
+const fs = require('fs');
+const input = fs.createReadStream('input.txt');
+const output = fs.createWriteStream('output.txt');
+const rl = readline.createInterface({ input, terminal: false });
+
+const lines = [];
+
+rl.on("line", (line) => {
+    lines.push(line);
+});
+
+rl.on('close', () => {
+    const [str1, str2] = lines;
+    output.write(anagramm(str1, str2).toString());
+})
+
+function createDict(str = "") {
+    let dict = {};
+
+    for (let char of str) {
+        dict[char] = dict[char] + 1 || 1;
+    }
+
+    return dict;
+}
+
+function anagramm(wordA = "", wordB = "") {
+    if (wordA.length !== wordB.length) {
+        return 0;
+    }
+
+    const dictA = createDict(wordA);
+    const dictB = createDict(wordB);
+
+    if (Object.keys(dictA).length !== Object.keys(dictB).length) {
+        return 0;
+    }
+
+    for (let letter in dictA) {
+        if (dictA[letter] !== dictB[letter]) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
