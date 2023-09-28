@@ -26,6 +26,11 @@
             {% else %}
             <p class="data-item__description">{{ data.data_item.data }}</p>
             {% endif %}
+            {% if data.data_item.is_encripted %}
+                <p data-encripted="true" class="data-item__status">Зашифровано</p>
+            {% else %}
+                <p data-encripted="false" class="data-item__status">Оригинал</p>
+            {% endif %}
         </div>
     </div>
 </div>

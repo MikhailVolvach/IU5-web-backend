@@ -8,13 +8,15 @@ app_path = Path("../")
 counter = makeCounter()
 
 class DataItem:
-    def __init__(self, img = "", title = "", value="", is_file=False, is_iterable=False):
+    def __init__(self, img = "", title = "", value="", is_file=False, is_iterable=False, is_code=False, is_encripted=False):
         self.__id = counter()
         self.img = img
         self.title = title
         self.is_file = is_file
         self.is_iterable = is_iterable
         self.data = value
+        self.is_code = is_code
+        self.is_encripted = is_encripted
         
     @property
     def id(self):
