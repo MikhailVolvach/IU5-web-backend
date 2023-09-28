@@ -38,6 +38,13 @@
                     <a class="btn btn-secondary card__add"><i class="bi bi-plus" style="font-size: 2em"></i></a>
                 </div>
             </div>
+            <p data-encripted="{{ data_item.is_encripted }}" class="encription-status card__status">
+                {% if data_item.is_encripted %}
+                Зашифровано
+                {% else %}
+                Оригинал
+                {% endif %}
+            </p>
         </div>
     </div>
     {% empty %}

@@ -44,6 +44,17 @@ body {
     background-color: #3B3B3B;
 }
 
+.encription-status {
+    position: absolute;
+    border-radius: 100px;
+}
+.encription-status[data-encripted="True"] {
+    background-color: #d61253;
+}
+.encription-status[data-encripted="False"] {
+    background-color: #A259FF;
+}
+
 
 /* HEADER */
 .header {
@@ -229,6 +240,12 @@ body {
     padding: 0px 2px;
 }
 
+.card__status {
+    padding: 7px 13px;
+    right: 10px;
+    top: 20px;
+}
+
 
 /* DATA-ITEM PAGE */
 .data-item {
@@ -287,21 +304,12 @@ body {
     justify-content: space-between;
     align-items: center;
 }
+
 .data-item__status {
-    position: absolute;
-    background-color: #A259FF;
     padding: 8px 10px;
     top: 20px;
     right: 40px;
-    border-radius: 100px;
 }
-.data-item__status[data-encripted="true"] {
-    background-color: #d61253;
-}
-.data-item__status[data-encripted="false"] {
-    background-color: #A259FF;
-}
-
 .data-item__cost {
     font-size: 20px;
 }
