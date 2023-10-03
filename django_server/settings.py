@@ -78,8 +78,13 @@ WSGI_APPLICATION = 'django_server.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'iu5_web_db',
+        'USER': 'iu5_web',
+        'password': '1703',
+        'HOST': 'localhost',
+        'PORT': 5432,
+        'TEST_CHARSET': 'utf8'
     }
 }
 
@@ -120,6 +125,10 @@ USE_TZ = True
 STATICFILES_DIRS = [
     BASE_DIR / "app/static",
 ]
+
+MEDIA_URL = 'media/'
+MEDIA_ROOT = Path(BASE_DIR, 'app/media')
+
 
 STATIC_URL = 'static/'
 
