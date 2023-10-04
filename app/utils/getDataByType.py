@@ -1,26 +1,15 @@
-from pathlib import Path
+from app.config import media_path, Path
 
 def getDataByType(DataItem, id):
     item = DataItem.objects.filter(id=id)[0]
-    # data = {
-    #     "img": Data.img,
-    #     "title": Data.title,
-    #     "file": Data.file,
-    #     "encription_status": Data.encription_status,
-    #     "status": Data.status,
-    #     "data_type": Data.data_type,
-    #     "data_encription_request": Data.data_encription_request,
-    #     "data_content": ""
-    # }
+    
     data = None
-    if DataItem.DataType.CODE == item.DataType:
-        # Код для получения кода из файла
-        pass
-    elif DataItem.DataType.IMAGE == item.DataType:
-        # Код для получения изображения из файла
-        pass
+    
+    if DataItem.DataType.IMAGE == item.data_type:
+        data = item.file.url
     else:
         # Код для получения текста из файла
-        pass
-    
-    return {item, data}
+        with open(Path(media_path, item.file.name), 'r') as f:
+            data = f.read(1000)
+            
+    return data

@@ -26,19 +26,18 @@
         <div class="card__wrapper">
             <div class="card__image-container">
                 <div class="card__image">
-                    {% comment %} <i class="{{ data_item.img }} card__icon"></i> {% endcomment %}
-                    <img src="{% static  data_item.img %}" alt="" class="card__img">
+                    <img src="{% static data_item.img %}" alt="" class="card__img">
                 </div>
             </div>
             <div class="card__content">
                 <p class="card__title">{{ data_item.title }}</p>
-                {% comment %} <p class="card__cost">{{data_item.cost}}&#8381;</p> {% endcomment %}
                 <div class="card__buttons">
                     <a class="btn btn-primary card__more" href="{% url 'data_item' data_item.id %}">Подробнее</a>
                     <a class="btn btn-secondary card__add"><i class="bi bi-plus" style="font-size: 2em"></i></a>
                 </div>
             </div>
             <p data-encripted="{% if data_item.encription_status == 'Оригинал' %}True{% else %}False{% endif %}" class="encription-status card__status"> {{ data_item.encription_status }} </p>
+            <a class="card__del" href={% url 'delete_data_item' data_item.id %}><i class="bi bi-x-circle" style="font-size: 3em"></i></a>
         </div>
     </div>
     {% empty %}

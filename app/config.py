@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 
 
-static_path = Path(os.path.dirname(os.path.abspath(__file__)), "static") # Путь до статических файлов
-data_path = Path(static_path, "data") 
-img_path = Path(static_path, "img")
-icons_path = Path(static_path, "icons")
+media_path = Path(os.path.dirname(os.path.abspath(__file__)), "media") # Путь до медиа файлов
+data_path = Path(media_path, "data") 
+img_path = Path(media_path, "img")

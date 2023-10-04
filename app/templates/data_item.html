@@ -8,30 +8,24 @@
 {% block content %}
 <div class="data-item">
     <div class="data-item__container">
+        {% if data.data_item.data_type != 'Изображение' %}
         <div class="data-item__image-container">
             <div class="data-item__image">
-                <img src="{% static  data.data_item.img %}" alt="" class="data-item__img">
+                <img src="{{ data.data_item.img.url }}" alt="" class="data-item__img">
             </div>
         </div>
+        {% endif %}
         <div class="data-item__content">
             <p class="data-item__title">{{ data.data_item.title }}</p>
-            {% if data.data_item.is_iterable %}
-            <ul class="data-item__list">
-                {% for item in data.data_item.data %}
-                <li class="data-item__description">{{ item }}</li>
-                {% empty %}
-                <p class="data-item__description">Нет информации</p>
-                {% endfor %}
-            </ul>
+            {% if data.data_item.data_type == 'Текстовый файл' %}
+                <p class="data-item__description">{{ data.information }}</p>
             {% else %}
-            <p class="data-item__description">{{ data.data_item.data }}</p>
+                <div class="data-item__content-image-container">
+                    <img src="{{ data.data_item.img.url }}" alt="" class="data-item__img">
+                </div>
             {% endif %}
-            <p data-encripted="{{ data.data_item.is_encripted }}" class="encription-status data-item__status">
-                {% if data.data_item.is_encripted %}
-                Зашифровано
-                {% else %}
-                Оригинал
-                {% endif %}
+            <p data-encripted="{% if data_item.encription_status == 'Оригинал' %}True{% else %}False{% endif %}" class="encription-status data-item__status">
+                {{ data.data_item.encription_status }}
             </p>
         </div>
     </div>
