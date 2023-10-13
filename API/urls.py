@@ -33,9 +33,11 @@ path('', include(router.urls)),
     path(r'data/<int:id>/delete/', views.delete_data_item, name='delete-data'),
     path(r'data/<int:id>/add_to_request/', views.add_data_to_request, name='add-data-to-request'),
 
-    path(r'encryption_requests/', views.get_encryption_requests , name='encryption-requests-list'),
-    path(r'encryption_requests/<int:id>/', views.get_encryption_request, name='encryption-request-item'),
-    path(r'encryption_requests/<int:id>/put', views.change_encryption_request, name='put-encryption-request'),
+    path(r'encryption_requests/', views.get_encryption_reqs , name='encryption-requests-list'),
+    path(r'encryption_requests/<int:id>/', views.get_encryption_req, name='encryption-request-item'),
+    path(r'encryption_requests/<int:id>/put', views.change_encryption_req, name='put-encryption-request'),
+
+    path(r'encryption_requests/<int:id>/delete-data-item', views.delete_data_from_encryption_req, name='delete-data-from-request'),
 
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 

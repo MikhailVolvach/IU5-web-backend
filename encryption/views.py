@@ -86,7 +86,7 @@ def add_data_to_request(request, id, format=None):
 ####################
 
 @api_view(['Get'])
-def get_encryption_requests(request, format=None):
+def get_encryption_reqs(request, format=None):
     requests = DataEncryptionRequest.objects.all()
     serializer = DataEncriptionRequestSerializer(requests, many=True)
 
@@ -94,10 +94,10 @@ def get_encryption_requests(request, format=None):
 
 
 @api_view(['Get'])
-def get_encryption_request(request, id, format=None):
-    encryption_request = get_object_or_404(DataEncryptionRequest, id=id)
-    encryption_serializer = DataEncriptionRequestSerializer(encryption_request)
-    data_items_serializer = DataItemSerializer(encryption_request.data_item.all(), many=True)
+def get_encryption_req(request, id, format=None):
+    encryption_req = get_object_or_404(DataEncryptionRequest, id=id)
+    encryption_serializer = DataEncriptionRequestSerializer(encryption_req)
+    data_items_serializer = DataItemSerializer(encryption_req.data_item.all(), many=True)
 
     print(data_items_serializer.data)
 
@@ -108,9 +108,9 @@ def get_encryption_request(request, id, format=None):
 
 
 @api_view(['Put'])
-def change_encryption_request(request, id, format=None):
-    encryption_request = get_object_or_404(DataItem, id=id)
-    serializer = DataEncriptionRequestSerializer(encryption_request, data=request.data)
+def change_encryption_req(request, id, format=None):
+    encryption_req = get_object_or_404(DataEncryptionRequest, id=id)
+    serializer = DataEncriptionRequestSerializer(encryption_req, data=request.data)
 
     if serializer.is_valid():
         serializer.save()
@@ -119,12 +119,29 @@ def change_encryption_request(request, id, format=None):
 
 
 @api_view(['Put'])
-def delete_encryption_request(request, id, format=None):
-    encryption_request = get_object_or_404(DataItem, id=id)
-    encryption_request.set_is_deleted()
-    serializer = DataEncriptionRequestSerializer(encryption_request)
+def delete_encryption_req(request, id, format=None):
+    encryption_req = get_object_or_404(DataEncryptionRequest, id=id)
+    encryption_req.set_is_deleted()
+    serializer = DataEncriptionRequestSerializer(encryption_req)
 
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['Post'])
+def delete_data_from_encryption_req(request, id, format=None):
+    encryption_req = get_object_or_404(DataEncryptionRequest, id=id)
+
+    try:
+        encryption_req.data_item.get(id=request.data['data_item_id']).dataencryptionrequest_set.remove(encryption_req)
+        # data_item = get_object_or_404(DataItem, id=request.data['data_item_id'])
+        # data_item.dataencryptionrequest_set.remove(encryption_req)
+    except:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    return Response({
+        'request': DataEncriptionRequestSerializer(encryption_req).data,
+        'data': DataItemSerializer(encryption_req.data_item.all(), many=True).data
+    })
