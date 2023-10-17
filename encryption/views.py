@@ -54,8 +54,8 @@ def change_data_item(request, id, format=None):
 @api_view(['Put'])
 def delete_data_item(request, id, format=None):
     data_item = get_object_or_404(DataItem, id=id)
-    data_item.set_is_deleted()
-    serializer = DataItemSerializer(data_item)
+    data_item.is_deleted = True
+    serializer = DataItemSerializer(data_item, data={"is_deleted": True}, partial=True)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data)
@@ -87,7 +87,7 @@ def add_data_to_request(request, id, format=None):
 
 @api_view(['Get'])
 def get_encryption_reqs(request, format=None):
-    requests = DataEncryptionRequest.objects.all()
+    requests = DataEncryptionRequest.objects.all().order_by("creation_date").order_by("work_status")
     serializer = DataEncriptionRequestSerializer(requests, many=True)
 
     return Response(serializer.data)
@@ -98,8 +98,6 @@ def get_encryption_req(request, id, format=None):
     encryption_req = get_object_or_404(DataEncryptionRequest, id=id)
     encryption_serializer = DataEncriptionRequestSerializer(encryption_req)
     data_items_serializer = DataItemSerializer(encryption_req.data_item.all(), many=True)
-
-    print(data_items_serializer.data)
 
     return Response({
         'request': encryption_serializer.data,

@@ -16,7 +16,7 @@ class DataEncryptionRequest(models.Model):
 
     work_status = models.TextField(choices=Status.choices, default=Status.INTRODUCED)
     creation_date = models.DateTimeField(default=timezone.now)
-    formation_date = models.DateTimeField()
+    formation_date = models.DateTimeField(default=timezone.now)
     user = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
     
     data_item = models.ManyToManyField(DataItem)
