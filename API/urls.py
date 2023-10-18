@@ -1,19 +1,3 @@
-"""
-URL configuration for API project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/4.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import include, path
 from rest_framework import routers
@@ -36,6 +20,8 @@ path('', include(router.urls)),
     path(r'encryption_requests/', views.get_encryption_reqs , name='encryption-requests-list'),
     path(r'encryption_requests/<int:id>/', views.get_encryption_req, name='encryption-request-item'),
     path(r'encryption_requests/<int:id>/put', views.change_encryption_req, name='put-encryption-request'),
+    path(r'encryption_requests/<int:id>/delete', views.delete_encryption_req, name='delete-encryption-request'),
+    path(r'encryption_requests/<int:id>/approve', views.approve_encryption_req, name="appove-encryption-request"),
 
     path(r'encryption_requests/<int:id>/delete-data-item', views.delete_data_from_encryption_req, name='delete-data-from-request'),
 

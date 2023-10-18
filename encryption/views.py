@@ -70,15 +70,18 @@ def add_data_to_request(request, id, format=None):
     try:
         encryption = DataEncryptionRequest.objects.get(id=request.data["request_id"])
     except:
-        encryption = DataEncryptionRequest.objects.create(work_status=DataEncryptionRequest.Status.INTRODUCED,
+        encryption = DataEncryptionRequest.objects.create(work_status=DataEncryptionRequest.Status.DRAFT,
                                                           creation_date=timezone.now(),
                                                           formation_date=timezone.now(),
                                                           user_id=1)
 
     # Добавление в М-М таблицу записи с текущей заявкой и услугой
     data_item.dataencryptionrequest_set.add(encryption)
-
-    return Response()
+    
+    return Response({
+        "request": DataEncriptionRequestSerializer(encryption).data,
+        "data": DataItemSerializer(encryption.data_item.all(), many=True).data
+    })
 
 
 ####################
@@ -87,10 +90,12 @@ def add_data_to_request(request, id, format=None):
 
 @api_view(['Get'])
 def get_encryption_reqs(request, format=None):
+    print(request.user)
+    # if request.user.is_staff and not request.user.is_superuser:
     requests = DataEncryptionRequest.objects.all().order_by("creation_date").order_by("work_status")
     serializer = DataEncriptionRequestSerializer(requests, many=True)
-
     return Response(serializer.data)
+    # return Response(serializer.errors, status=status.HTTP_403_FORBIDDEN)
 
 
 @api_view(['Get'])
@@ -119,8 +124,8 @@ def change_encryption_req(request, id, format=None):
 @api_view(['Put'])
 def delete_encryption_req(request, id, format=None):
     encryption_req = get_object_or_404(DataEncryptionRequest, id=id)
-    encryption_req.set_is_deleted()
-    serializer = DataEncriptionRequestSerializer(encryption_req)
+    
+    serializer = DataEncriptionRequestSerializer(encryption_req, data={"work_status": DataEncryptionRequest.Status.DELETED}, partial=True)
 
     if serializer.is_valid():
         serializer.save()
@@ -143,3 +148,14 @@ def delete_data_from_encryption_req(request, id, format=None):
         'request': DataEncriptionRequestSerializer(encryption_req).data,
         'data': DataItemSerializer(encryption_req.data_item.all(), many=True).data
     })
+    
+@api_view(['Put'])
+def approve_encryption_req(request, id, format=None):
+    encryption_req = get_object_or_404(DataEncryptionRequest, id=id)
+
+    serializer = DataEncriptionRequestSerializer(encryption_req, data={"work_status": DataEncryptionRequest.Status.FORMED}, partial=True)
+    
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

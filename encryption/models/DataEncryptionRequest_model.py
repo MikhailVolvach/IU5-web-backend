@@ -8,13 +8,13 @@ from .DataItem_model import DataItem
 
 class DataEncryptionRequest(models.Model):
     class Status(models.TextChoices):
-        INTRODUCED = 'Введён'
-        IN_WORK = "В работе"
+        DRAFT = 'Черновик'
+        FORMED = "Сформирован"
         FINALISED = "Завершён"
         CANCELLED = "Отменён"
         DELETED = "Удалён"
 
-    work_status = models.TextField(choices=Status.choices, default=Status.INTRODUCED)
+    work_status = models.TextField(choices=Status.choices, default=Status.DRAFT)
     creation_date = models.DateTimeField(default=timezone.now)
     formation_date = models.DateTimeField(default=timezone.now)
     user = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
