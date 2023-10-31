@@ -8,7 +8,8 @@ from .DataItem_model import DataItem
 
 class DataEncryptionRequest(models.Model):
     class Status(models.TextChoices):
-        DRAFT = 'Черновик'
+        # Черновик можно удалить или сформировать. Сформированную заявку можно завершить, отменить или удалить.
+        DRAFT = "Черновик"
         FORMED = "Сформирован"
         FINALISED = "Завершён"
         CANCELLED = "Отменён"
@@ -20,6 +21,12 @@ class DataEncryptionRequest(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
     
     data_item = models.ManyToManyField(DataItem)
+    
+    class Action(models.IntegerChoices):
+        ENCRYPT = 0
+        DECRYPT = 1
+    
+    action = models.IntegerField(default=Action.ENCRYPT)
 
     def set_is_deleted(self):
         self.work_status = self.Status.DELETED
