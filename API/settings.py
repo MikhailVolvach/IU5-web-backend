@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,7 +26,7 @@ SECRET_KEY = 'django-insecure-jntx)acjxyah^40fg5(!rdnp3c*1f6$)v&64u32-(a3suwh%@t
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
 # Application definition
 
@@ -36,6 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    'django.contrib.postgres',
 
     'rest_framework',
     'encryption'
@@ -78,12 +81,11 @@ WSGI_APPLICATION = 'API.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'iu5_web_db',
-        'USER': 'iu5_web',
-        'password': '1703',
-        'HOST': 'localhost',
-        'PORT': 5432,
-        'TEST_CHARSET': 'utf8'
+        'NAME': os.environ.get('POSTGRES_DB'),
+        'USER': os.environ.get('POSTGRES_USER'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+        'HOST': 'db',
+        'PORT': 5432
     }
 }
 
@@ -125,6 +127,15 @@ STATIC_URL = 'static/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / "encryption/media"
+
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+AWS_STORAGE_BUCKET_NAME = 'api-data'     # Бакет должен уже быть создан
+AWS_ACCESS_KEY_ID = os.environ.get('MINIO_ACCESS_KEY')
+AWS_SECRET_ACCESS_KEY = os.environ.get('MINIO_SECRET_KEY')
+AWS_S3_ENDPOINT_URL = 'http://nginx:9000'
+
+TIME_ZONE = 'Europe/Moscow'
 
 
 # Default primary key field type

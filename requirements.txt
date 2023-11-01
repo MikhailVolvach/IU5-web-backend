@@ -6,9 +6,12 @@ Django==4.2.5
 djangorestframework==3.14.0
 idna==3.4
 Pillow==10.0.1
+psycopg2==2.9.9
 pytz==2023.3.post1
 requests==2.31.0
 soupsieve==2.5
 sqlparse==0.4.4
 typing_extensions==4.7.1
 urllib3==2.0.4
+boto3==1.28.63
+django-storages==1.14.2
