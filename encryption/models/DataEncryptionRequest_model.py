@@ -16,7 +16,7 @@ class DataEncryptionRequest(models.Model):
         DELETED = "Удалён"
 
     work_status = models.TextField(choices=Status.choices, default=Status.DRAFT)
-    creation_date = models.DateTimeField(default=timezone.now)
+    creation_date = models.DateTimeField(default=timezone.now())
     formation_date = models.DateTimeField(default=timezone.now)
     user = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
     
