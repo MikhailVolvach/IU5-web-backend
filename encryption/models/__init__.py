@@ -1,2 +1,3 @@
 from .DataItem_model import DataItem
 from .DataEncryptionRequest_model import DataEncryptionRequest
+from .EncryptionUser_model import EncryptionUser

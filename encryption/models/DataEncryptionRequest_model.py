@@ -1,9 +1,10 @@
 from django.db import models
 from django.utils import timezone
 
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 
 from .DataItem_model import DataItem
+from .EncryptionUser_model import EncryptionUser
 
 
 class DataEncryptionRequest(models.Model):
@@ -16,9 +17,9 @@ class DataEncryptionRequest(models.Model):
         DELETED = "Удалён"
 
     work_status = models.TextField(choices=Status.choices, default=Status.DRAFT)
-    creation_date = models.DateTimeField(default=timezone.now())
+    creation_date = models.DateTimeField(default=timezone.now)
     formation_date = models.DateTimeField(default=timezone.now)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
+    user = models.ForeignKey(EncryptionUser, on_delete=models.CASCADE)
     
     data_item = models.ManyToManyField(DataItem)
     
@@ -28,6 +29,5 @@ class DataEncryptionRequest(models.Model):
     
     action = models.IntegerField(default=Action.ENCRYPT)
 
-    def set_is_deleted(self):
-        self.work_status = self.Status.DELETED
+    bool = models.BooleanField(default=False)
     

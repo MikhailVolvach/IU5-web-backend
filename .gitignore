@@ -2,7 +2,6 @@ env/
 db.sqlite3
 __pycache__
 .idea
-encryption/migrations/
 Dockerfile
 nginx.conf
 docker-compose.yml
