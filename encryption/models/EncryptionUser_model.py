@@ -2,6 +2,9 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, Group as AuthGroup, Permission as AuthPermission
 
 class MyUserManager(BaseUserManager):
+
+
+
     def create_user(self, username, password=None, **extra_fields):
         if not username:
             raise ValueError('У пользователя должно быть имя')
@@ -30,6 +33,21 @@ class MyUserManager(BaseUserManager):
         extra_fields.setdefault('role', 3)
 
         return self.create_user(username, password, **extra_fields)
+
+    def create_superuser(self, username, password=None, **extra_fields):
+        if not username:
+            raise ValueError('У суперпользователя должно быть имя')
+
+        extra_fields.setdefault('role', 3)
+        user = self.create_user(
+            username, password, **extra_fields
+        )
+        user.is_staff=True
+        user.is_active=True
+        user.is_superuser=True
+        user.save(using=self.db)
+
+        return user
 #
 # class EncryptionUser(AbstractBaseUser, PermissionsMixin):
 #     username = models.CharField(max_length=30, unique=True, verbose_name='Имя пользователя')
@@ -66,7 +84,7 @@ class MyUserManager(BaseUserManager):
 
 class EncryptionUser(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=30, unique=True, verbose_name="Имя пользователя")
-    # password = models.CharField(max_length=50, verbose_name="Пароль")
+    # password = models.CharField(max_length=20, verbose_name="Пароль")
 
     class Roles(models.IntegerChoices):
         USER = 1
@@ -76,5 +94,8 @@ class EncryptionUser(AbstractBaseUser, PermissionsMixin):
     role = models.IntegerField(choices=Roles.choices, default=Roles.USER, verbose_name="Роль пользователя", blank=True)
 
     USERNAME_FIELD = 'username'
+
+    is_staff = models.BooleanField(default=False, blank=True)
+    is_superuser=models.BooleanField(default=False, blank=True)
 
     objects = MyUserManager()

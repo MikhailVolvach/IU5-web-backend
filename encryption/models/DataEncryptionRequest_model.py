@@ -27,7 +27,5 @@ class DataEncryptionRequest(models.Model):
         ENCRYPT = 0
         DECRYPT = 1
     
-    action = models.IntegerField(default=Action.ENCRYPT)
-
-    bool = models.BooleanField(default=False)
+    action = models.IntegerField(choices=Action.choices, default=Action.ENCRYPT)
     

@@ -65,7 +65,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'encryption.access_middleware.AccessMiddleware'
+    # 'encryption.access_middleware.AccessMiddleware'
 ]
 
 AUTH_USER_MODEL = 'encryption.EncryptionUser'

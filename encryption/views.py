@@ -41,7 +41,8 @@ class UserViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             self.model_class.objects.create_user(username=serializer.data['username'],
                                                  password=serializer.data['password'],
-                                                 role=serializer.data['role'])
+                                                 role=serializer.data['role'],
+                                                 is_staff=serializer.data['is_staff'])
             return Response({'status': 'Success'}, status=200)
         return Response({'status': 'Error', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -162,7 +163,7 @@ class DataEncryptionReqItem(APIView):
 
 
     @swagger_auto_schema(request_body=data_encryption_req_serializer)
-    @method_permission_classes((IsModerator, IsAdmin))
+    # @method_permission_classes((IsModerator, IsAdmin))
     def put(self, request, id, format=None):
         # TODO: Добавить проверку изменения статуса заявки
         encryption_req = get_object_or_404(self.data_encryption_req_model, id=id)
