@@ -1,10 +1,7 @@
 from django.db import models
 from django.utils import timezone
-
-# from django.contrib.auth.models import User
-
+from django.contrib.auth.models import User
 from .DataItem_model import DataItem
-from .EncryptionUser_model import EncryptionUser
 
 
 class DataEncryptionRequest(models.Model):
@@ -19,7 +16,7 @@ class DataEncryptionRequest(models.Model):
     work_status = models.TextField(choices=Status.choices, default=Status.DRAFT)
     creation_date = models.DateTimeField(default=timezone.now)
     formation_date = models.DateTimeField(default=timezone.now)
-    user = models.ForeignKey(EncryptionUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     
     data_item = models.ManyToManyField(DataItem)
     
