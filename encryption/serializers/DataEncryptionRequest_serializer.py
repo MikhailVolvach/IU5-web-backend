@@ -2,7 +2,7 @@ from encryption.models import DataEncryptionRequest
 from rest_framework import serializers
 from django.contrib.auth.models import User
 
-class DataEncriptionRequestSerializer(serializers.ModelSerializer):
+class DataEncryptionRequestSerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField()
     class Meta:        
         model = DataEncryptionRequest

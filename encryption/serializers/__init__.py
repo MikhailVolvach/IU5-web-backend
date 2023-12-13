@@ -1,3 +1,3 @@
 from .DataItem_serializer import DataItemSerializer
-from .DataEncriptionRequest_serializer import DataEncriptionRequestSerializer
+from .DataEncryptionRequest_serializer import DataEncryptionRequestSerializer
 from .EncryptionUser_serializer import EncryptionUserSerializer

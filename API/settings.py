@@ -42,6 +42,7 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'encryption',
+    'django_filters',
 
     'drf_yasg'
 ]
