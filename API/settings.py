@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     
     'django.contrib.postgres',
 
+    'corsheaders',
+
     'rest_framework',
     'encryption',
     'django_filters',
@@ -61,11 +63,15 @@ REST_FRAMEWORK = {
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+
+    'corsheaders.middleware.CorsMiddleware',
+    
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
     # 'encryption.access_middleware.AccessMiddleware'
 ]
 
@@ -101,7 +107,7 @@ DATABASES = {
         'NAME': os.environ.get('POSTGRES_DB'),
         'USER': os.environ.get('POSTGRES_USER'),
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-        'HOST': 'db',
+        'HOST': 'db2',
         'PORT': 5432
     }
 }
@@ -179,8 +185,15 @@ AWS_S3_ENDPOINT_URL = os.environ.get('MINIO_HOST')
 
 TIME_ZONE = 'Europe/Moscow'
 
-CSRF_TRUSTED_ORIGINS = [
-    'https://nginx'
+# CSRF_TRUSTED_ORIGINS = [
+#     'https://nginx'
+# ]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://mikhailvolvach.github.io"
+    # Добавьте здесь другие разрешенные источники, если необходимо
 ]
 
 # Default primary key field type
