@@ -2,6 +2,5 @@ env/
 db.sqlite3
 __pycache__
 .idea
-Dockerfile
 nginx.conf
 docker-compose.yml
