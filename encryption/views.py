@@ -3,7 +3,7 @@ from drf_yasg.utils import swagger_auto_schema
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login, logout
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
@@ -83,21 +83,22 @@ def method_permission_classes(classes):
 
 
 # @swagger_auto_schema(method='post', request_body=EncryptionUserSerializer)
-# @api_view(['Post'])
+@api_view(['Post'])
 @permission_classes([AllowAny])
 @csrf_exempt
-def login_view(request):
-    username = request.POST["username"]
-    password = request.POST["password"]
+def login_view(request, format=None):
+    username = request.data.get("username")
+    password = request.data.get("password")
 
     user = authenticate(request, username=username, password=password)
-    print(user)
     if user is not None:
         random_key = str(uuid.uuid4())
         session_storage.set(random_key, username)
 
-        response = HttpResponse("{'status': 'ok'}")
-        response.set_cookie("session_id", random_key)
+        user_serializer = EncryptionUserSerializer(user)
+
+        response = JsonResponse(user_serializer.data)
+        response.set_cookie("session_id", random_key, max_age=86400)
 
         return response
     else:
@@ -105,7 +106,8 @@ def login_view(request):
 
 
 @csrf_exempt
-def logout_view(request):
+@api_view(['Post'])
+def logout_view(request, format=None):
     logout(request)
     return HttpResponse("{'status': 'ok'}")
 

@@ -39,14 +39,15 @@ urlpatterns = [
     
     path(r'api/encryption-requests/form/', views.form_encryption_req, name='form-encryption-request'),
     path(r'api/encryption-requests/<int:id>/change-status/', views.change_encryption_req_status, name='change-encryption-request-status'),
+   path(r'api/login', views.login_view, name='login'),
+    path(r'api/logout', views.logout_view, name='logout'),
 
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
 
     path('admin/', admin.site.urls),
 
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
-    path('api/login', views.login_view, name='login'),
-    path('api/logout', views.logout_view, name='logout'),
+    
 
     # path('/user')
 ]
