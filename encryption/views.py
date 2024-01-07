@@ -111,6 +111,17 @@ def logout_view(request, format=None):
     logout(request)
     return HttpResponse("{'status': 'ok'}")
 
+@api_view(['Get'])
+@csrf_exempt
+@permission_classes([AllowAny])
+def get_auth_user(request, format=None):
+    ssid = request.COOKIES['session_id']
+
+    session_storage.get(ssid)
+    ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
+
+    return Response(EncryptionUserSerializer(ssid_user).data)
+
 
 class DataList(APIView):
     data_item_model_class = DataItem
@@ -129,7 +140,10 @@ class DataList(APIView):
         serializer = self.data_item_serializer(data_list, many=True)
 
         try:
-            req_id = self.data_req_model_class.objects.get(work_status=self.data_req_model_class.Status.DRAFT).id
+            ssid = request.COOKIES['session_id']
+            session_storage.get(ssid)
+            ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
+            req_id = self.data_req_model_class.objects.get(work_status=self.data_req_model_class.Status.DRAFT, user=ssid_user).id
         except:
             req_id = None
 
@@ -209,9 +223,15 @@ class DataEncryptionReqItem(APIView):
     data_item_serializer = DataItemSerializer
 
     def get(self, request, id, format=None):
-        encryption_req = get_object_or_404(self.data_encryption_req_model, id=id, user=request.user.id)
+        ssid = request.COOKIES['session_id']
+        session_storage.get(ssid)
+        ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
+
+        encryption_req = get_object_or_404(self.data_encryption_req_model, id=id, user=ssid_user)
         encryption_serializer = self.data_encryption_req_serializer(encryption_req)
         data_items_serializer = self.data_item_serializer(encryption_req.data_item.all(), many=True)
+
+
 
         return Response({
             'request': encryption_serializer.data,
@@ -392,3 +412,4 @@ def form_encryption_req(request, format=None):
         serializer.save()
         return Response(serializer.data)
     return Response("Ошибка формирования заявки", status=status.HTTP_400_BAD_REQUEST)
+
