@@ -18,6 +18,8 @@ from django.conf import settings
 import redis
 import uuid
 from rest_framework import filters
+from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.views import ObtainAuthToken
 
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -230,8 +232,6 @@ class DataEncryptionReqItem(APIView):
         encryption_req = get_object_or_404(self.data_encryption_req_model, id=id, user=ssid_user)
         encryption_serializer = self.data_encryption_req_serializer(encryption_req)
         data_items_serializer = self.data_item_serializer(encryption_req.data_item.all(), many=True)
-
-
 
         return Response({
             'request': encryption_serializer.data,
