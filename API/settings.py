@@ -52,13 +52,11 @@ INSTALLED_APPS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
-    ]
-
+    # 'DEFAULT_PERMISSION_CLASSES': [
+    #     'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    # ]
 }
 
 MIDDLEWARE = [
@@ -146,16 +144,22 @@ USE_TZ = True
 REDIS_HOST = os.environ.get('REDIS_HOST')
 REDIS_PORT = os.environ.get('REDIS_PORT')
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/
-
 STATIC_URL = 'static/'
 
-# STATIC_ROOT = BASE_DIR / "encryption/static"
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
 
-# MEDIA_URL = 'http://localhost:9000/api-data/'
-# MEDIA_ROOT = BASE_DIR / "encryption/media"
+SESSION_COOKIE_SECURE = False
 
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",  # Адрес и порт Redis
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
 
 # Старый конфиг
 # STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
@@ -165,30 +169,8 @@ AWS_STORAGE_BUCKET_NAME = 'api-data'     # Бакет должен уже быт
 AWS_ACCESS_KEY_ID = os.environ.get('MINIO_ACCESS_KEY')
 AWS_SECRET_ACCESS_KEY = os.environ.get('MINIO_SECRET_KEY')
 AWS_S3_ENDPOINT_URL = os.environ.get('MINIO_HOST')
-#
-# STATIC_URL = 'http://localhost:9000/' + AWS_STORAGE_BUCKET_NAME + '/'
-
-# #Новый конфиг
-# MINIO_ROOT_USER = os.environ.get('MINIO_ACCESS_KEY')
-# MINIO_ROOT_PASSWORD = os.environ.get('MINIO_SECRET_KEY')
-# MINIO_STORAGE_ENDPOINT = os.environ.get('MINIO_HOST', 'http://nginx:9000')
-# # MINIO_STORAGE_MEDIA_BUCKET_NAME = os.environ.get('MINIO_STORAGE_MEDIA_BUCKET_NAME', 'your-media-bucket-name')
-# # MINIO_STORAGE_STATIC_BUCKET_NAME = os.environ.get('MINIO_STORAGE_STATIC_BUCKET_NAME', 'your-static-bucket-name')
-# MINIO_STORAGE_STATIC_BUCKET_NAME = 'api-data'
-#
-# # Используйте минио как хранилище для статики
-# STATIC_URL = MINIO_STORAGE_ENDPOINT + '/' + MINIO_STORAGE_STATIC_BUCKET_NAME + '/'
-# STATICFILES_STORAGE = 'minio_storage.storage.MinioStaticStorage'
-
-# Используйте минио как хранилище для медиафайлов
-# DEFAULT_FILE_STORAGE = 'minio_storage.storage.MinioMediaStorage'
-# MEDIA_URL = MINIO_STORAGE_ENDPOINT + '/' + MINIO_STORAGE_MEDIA_BUCKET_NAME + '/'
 
 TIME_ZONE = 'Europe/Moscow'
-
-# CSRF_TRUSTED_ORIGINS = [
-#     'https://nginx'
-# ]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",

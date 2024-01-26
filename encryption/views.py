@@ -1,4 +1,6 @@
 from django.shortcuts import get_object_or_404
+from django.contrib.sessions.models import Session
+from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -23,8 +25,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 session_storage = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
-
-# session_storage = redis.StrictRedis(host='http://localhost', port=settings.REDIS_PORT)
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = EncryptionUser.objects.all()
@@ -70,19 +70,18 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({'status': 'Error', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def method_permission_classes(classes):
-    def decorator(func):
-        def decorated_func(self, *args, **kwargs):
-            self.permission_classes = classes
-            self.check_permissions(self.request)
-            return func(self, *args, **kwargs)
-
-        return decorated_func
-
-    return decorator
-
-
-# @swagger_auto_schema(method='post', request_body=EncryptionUserSerializer)
+@swagger_auto_schema(
+    method='post', 
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'username': openapi.Schema(type=openapi.TYPE_STRING, desription='Имя пользователя'),
+            'password': openapi.Schema(type=openapi.TYPE_STRING, desription='Пароль пользователя')
+        },
+        required=['username', 'password']
+    ),
+    operation_description='Метод авторизации'
+)
 @api_view(['Post'])
 @permission_classes([AllowAny])
 @csrf_exempt
@@ -94,33 +93,46 @@ def login_view(request, format=None):
     if user is not None:
         random_key = str(uuid.uuid4())
         session_storage.set(random_key, username)
+        session_storage.expire(random_key, 86400)
 
         user_serializer = EncryptionUserSerializer(user)
 
-        response = JsonResponse(user_serializer.data)
-        response.set_cookie("session_id", random_key, max_age=86400)
+        request.session['session_id'] = random_key
+
+        response = JsonResponse({
+            'user': user_serializer.data, 
+            'order_id': get_object_or_404(DataEncryptionRequest, user=user, work_status=DataEncryptionRequest.Status.DRAFT).id})
+        
+        response.set_cookie('session_id', random_key)
 
         return response
     else:
-        return HttpResponse("{'status': 'error', 'error': 'login failed'}")
+        return JsonResponse({'status': 'error', 'error': 'login failed'})
 
-
-@csrf_exempt
-@api_view(['Post'])
+   
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication])
 def logout_view(request, format=None):
+    ssid = request.session.get('session_id')
+
+    if ssid:
+        # Удаляем данные сессии из Redis
+        session_storage.delete(ssid)
+
+    # Выход пользователя
     logout(request)
-    return HttpResponse("{'status': 'ok'}")
+    
+    return JsonResponse({'status': 'ok'})
 
 @api_view(['Get'])
-@csrf_exempt
-@permission_classes([AllowAny])
+@authentication_classes([SessionAuthentication])
 def get_auth_user(request, format=None):
-    ssid = request.COOKIES['session_id']
-
-    session_storage.get(ssid)
+    ssid = request.session.get('session_id')
+    
     ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
 
-    return Response(EncryptionUserSerializer(ssid_user).data)
+    return JsonResponse({'user': EncryptionUserSerializer(ssid_user).data,
+                         'order_id': get_object_or_404(DataEncryptionRequest, user=ssid_user, work_status=DataEncryptionRequest.Status.DRAFT).id})
 
 
 class DataList(APIView):
@@ -129,6 +141,7 @@ class DataList(APIView):
     data_item_serializer = DataItemSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['search']
+    authentication_classes = [SessionAuthentication]
 
     def get(self, request, format=None):
         query = request.GET.get('search')
@@ -153,14 +166,16 @@ class DataList(APIView):
             "data": serializer.data})
 
     @swagger_auto_schema(request_body=data_item_serializer)
-    @method_permission_classes((IsModerator,))
     def post(self, request, format=None):
-        ssid = request.COOKIES['session_id']
-        session_storage.get(ssid)
+        ssid = request.session.get('session_id')
+
+        if not ssid:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
         ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
 
-        if ssid_user.role != EncryptionUser.Roles.MODERATOR or request.user != ssid_user:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        if ssid_user.role != EncryptionUser.Roles.MODERATOR or not ssid_user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
         serializer = self.data_item_serializer(data=request.data)
 
@@ -173,7 +188,7 @@ class DataList(APIView):
 class DataListItem(APIView):
     data_item_serializer = DataItemSerializer
     data_item_model = DataItem
-    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    authentication_classes = [SessionAuthentication]
 
     def get(self, request, id, format=None):
         data_item = get_object_or_404(self.data_item_model, id=id)
@@ -182,55 +197,68 @@ class DataListItem(APIView):
         return Response(serializer.data)
 
     @swagger_auto_schema(request_body=data_item_serializer)
-    @method_permission_classes((IsAdmin, IsModerator,))
     def put(self, request, id, format=None):
-        ssid = request.COOKIES['session_id']
-        session_storage.get(ssid)
+        ssid = request.session.get('session_id')
+
+        if not ssid:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
         ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
 
-        if ssid_user.role not in [EncryptionUser.Roles.ADMIN, EncryptionUser.Roles.MODERATOR] or request.user != ssid_user:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        if ssid_user.role not in [EncryptionUser.Roles.ADMIN, EncryptionUser.Roles.MODERATOR] or not ssid_user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
         data_item = get_object_or_404(self.data_item_model, id=id)
         serializer = self.data_item_serializer(data_item, data=request.data)
+
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @method_permission_classes((IsAdmin, IsModerator))
     def delete(self, request, id, format=None):
-        ssid = request.COOKIES['session_id']
-        session_storage.get(ssid)
+        ssid = request.session.get('session_id')
+
+        if not ssid:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
         ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
 
         if ssid_user.role not in [EncryptionUser.Roles.ADMIN,
-                                  EncryptionUser.Roles.MODERATOR] or request.user != ssid_user:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+                                  EncryptionUser.Roles.MODERATOR] or not ssid_user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
         data_item = get_object_or_404(self.data_item_model, id=id)
         serializer = self.data_item_serializer(data_item, data={"is_deleted": True}, partial=True)
+        
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class DataEncryptionReqItem(APIView):
-    permission_classes = [IsAuthenticated]
     data_encryption_req_model = DataEncryptionRequest
     data_encryption_req_serializer = DataEncryptionRequestSerializer
     data_item_serializer = DataItemSerializer
+    authentication_classes = [SessionAuthentication]
 
     def get(self, request, id, format=None):
-        ssid = request.COOKIES['session_id']
-        session_storage.get(ssid)
+        ssid = request.session.get('session_id')
+
+        if not ssid:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        
         ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
+
+        if not ssid_user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
         encryption_req = get_object_or_404(self.data_encryption_req_model, id=id, user=ssid_user)
         encryption_serializer = self.data_encryption_req_serializer(encryption_req)
         data_items_serializer = self.data_item_serializer(encryption_req.data_item.all(), many=True)
-
 
 
         return Response({
@@ -240,26 +268,39 @@ class DataEncryptionReqItem(APIView):
         })
 
     @swagger_auto_schema(request_body=data_encryption_req_serializer)
-    # @method_permission_classes((IsModerator, IsAdmin))
     def put(self, request, id, format=None):
         # TODO: Добавить проверку изменения статуса заявки
+        ssid = request.session.get('session_id')
+
+        if not ssid:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
+
+        if ssid_user.role not in [EncryptionUser.Roles.ADMIN,
+                                  EncryptionUser.Roles.MODERATOR] or not ssid_user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
         encryption_req = get_object_or_404(self.data_encryption_req_model, id=id)
         serializer = self.data_encryption_req_serializer(encryption_req, data=request.data)
 
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
+
         return Response("Ошибка изменения заявки", status=status.HTTP_400_BAD_REQUEST)
 
-    @method_permission_classes((IsModerator, IsAdmin))
     def delete(self, request, id, format=None):
-        ssid = request.COOKIES['session_id']
-        session_storage.get(ssid)
+        ssid = request.session.get('session_id')
+
+        if not ssid:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
         ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
 
         if ssid_user.role not in [EncryptionUser.Roles.ADMIN,
-                                  EncryptionUser.Roles.MODERATOR] or request.user != ssid_user:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+                                  EncryptionUser.Roles.MODERATOR] or not ssid_user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
         encryption_req = get_object_or_404(self.data_encryption_req_model, id=id)
 
@@ -270,45 +311,50 @@ class DataEncryptionReqItem(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
+
         return Response("Ошибка удаления заявки", status=status.HTTP_400_BAD_REQUEST)
 
 
-@permission_classes([IsUser])
 @api_view(['Post'])
+@authentication_classes([SessionAuthentication])
 def add_data_to_request(request, id, format=None):
-    ssid = request.COOKIES['session_id']
-    session_storage.get(ssid)
+    ssid = request.session.get('session_id')
+
+    if not ssid:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+
     ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
 
-    if ssid_user.role != EncryptionUser.Roles.USER or request.user != ssid_user:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+    if ssid_user.role != EncryptionUser.Roles.USER or not ssid_user:
+        return Response(status=status.HTTP_403_FORBIDDEN)
 
     data_item = get_object_or_404(DataItem, id=id)
     # Попытка взять заявку, в противном случае создать заявку
     try:
         # Добавление данных в последнюю заявку со статусом черновик
         encryption = DataEncryptionRequest.objects.get(work_status=DataEncryptionRequest.Status.DRAFT,
-                                                       user=request.user.id)
+                                                       user=ssid_user.id)
     except:
         encryption = DataEncryptionRequest.objects.create(work_status=DataEncryptionRequest.Status.DRAFT,
                                                           creation_date=timezone.now(),
                                                           formation_date=timezone.now(),
-                                                          user_id=request.user.id)
+                                                          user_id=ssid_user.id)
 
     # Добавление в М-М таблицу записи с текущей заявкой и услугой
     data_item.dataencryptionrequest_set.add(encryption)
-
     return Response({
         "request": DataEncryptionRequestSerializer(encryption).data,
         "data": DataItemSerializer(encryption.data_item.all(), many=True).data
     })
 
 
-@permission_classes([IsAuthenticated])
 @api_view(['Get'])
+@authentication_classes([SessionAuthentication])
 def get_encryption_reqs(request, format=None):
-    if not request.COOKIES or not request.user.username:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+    ssid = request.session.get('session_id')
+
+    if not ssid:
+        return Response(status=status.HTTP_403_FORBIDDEN)
 
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
@@ -323,50 +369,76 @@ def get_encryption_reqs(request, format=None):
     else:
         end_date = timezone.datetime.max
 
-    print(request.user)
+    ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
 
-    if request.user.is_staff:
+    if not ssid_user:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+
+    if ssid_user.is_staff:
         requests = DataEncryptionRequest.objects.filter(creation_date__gte=start_date, creation_date__lt=end_date)
     else:
         requests = DataEncryptionRequest.objects.filter(creation_date__gte=start_date, creation_date__lt=end_date,
-                                                        user=request.user.id)
+                                                        user=ssid_user.id)
 
     serializer = DataEncryptionRequestSerializer(requests, many=True)
     return Response(serializer.data)
 
 
-@permission_classes([IsUser])
 @api_view(['Delete'])
+@authentication_classes([SessionAuthentication])
 def delete_data_from_encryption_req(request, id, format=None):
-    ssid = request.COOKIES['session_id']
-    session_storage.get(ssid)
+    ssid = request.session.get('session_id')
+
+    if not ssid:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+
     ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
 
-    if ssid_user.role != EncryptionUser.Roles.USER or request.user != ssid_user:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+    if ssid_user.role != EncryptionUser.Roles.USER or not ssid_user:
+        return Response(status=status.HTTP_403_FORBIDDEN)
 
     data_item = get_object_or_404(DataItem, id=id)
     try:
         data_item.dataencryptionrequest_set.remove(
             get_object_or_404(DataEncryptionRequest, work_status=DataEncryptionRequest.Status.DRAFT,
-                              user=request.user.id))
+                              user=ssid_user.id))
     except:
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
-    return Response()
+    encryption = DataEncryptionRequest.objects.get(work_status=DataEncryptionRequest.Status.DRAFT,
+                                                       user=ssid_user.id)
+
+    return Response({
+        "request": DataEncryptionRequestSerializer(encryption).data,
+        "data": DataItemSerializer(encryption.data_item.all(), many=True).data
+    })
 
 
 # Только для сформированных заявок
-@swagger_auto_schema(request_body=DataEncryptionRequestSerializer, method='put')
-@permission_classes([IsModerator])
+# @swagger_auto_schema(request_body=DataEncryptionRequestSerializer, method='put')
+@swagger_auto_schema(
+    method='Put', 
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'status': openapi.Schema(type=openapi.TYPE_STRING, desription='Статус заявки'),
+        },
+        required=['status']
+    ),
+    operation_description='Метод изменения статуса заявки'
+)
 @api_view(['Put'])
+@authentication_classes([SessionAuthentication])
 def change_encryption_req_status(request, id, format=None):
-    ssid = request.COOKIES['session_id']
-    session_storage.get(ssid)
+    ssid = request.session.get('session_id')
+
+    if not ssid:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+
     ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
 
-    if ssid_user.role != EncryptionUser.Roles.MODERATOR or request.user != ssid_user:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+    if ssid_user.role != EncryptionUser.Roles.MODERATOR or not ssid_user:
+        return Response(status=status.HTTP_403_FORBIDDEN)
 
     encryption_req = get_object_or_404(DataEncryptionRequest, id=id)
 
@@ -386,23 +458,29 @@ def change_encryption_req_status(request, id, format=None):
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data)
+
     return Response("Ошибка изменения статуса заявки", status=status.HTTP_400_BAD_REQUEST)
 
 
 # Сформировать можем только черновик (черновик может быть всего 1 у пользователя) (делает это пользователь)
-@swagger_auto_schema(request_body=DataEncryptionRequestSerializer, method='put')
-@permission_classes([IsUser])
+# @swagger_auto_schema(method='Put')
 @api_view(['Put'])
+@authentication_classes([SessionAuthentication])
 def form_encryption_req(request, format=None):
-    ssid = request.COOKIES['session_id']
-    session_storage.get(ssid)
+    ssid = request.session.get('session_id')
+
+    print(ssid)
+
+    if not ssid:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    
     ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
 
-    if ssid_user.role != EncryptionUser.Roles.USER or request.user != ssid_user:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+    if ssid_user.role != EncryptionUser.Roles.USER or not ssid_user:
+        return Response(status=status.HTTP_403_FORBIDDEN)
 
     encryption_req = get_object_or_404(DataEncryptionRequest, work_status=DataEncryptionRequest.Status.DRAFT,
-                                       user=request.user)
+                                       user=ssid_user)
 
     serializer = DataEncryptionRequestSerializer(encryption_req,
                                                  data={"work_status": DataEncryptionRequest.Status.FORMED,
@@ -411,5 +489,5 @@ def form_encryption_req(request, format=None):
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data)
-    return Response("Ошибка формирования заявки", status=status.HTTP_400_BAD_REQUEST)
 
+    return Response("Ошибка формирования заявки", status=status.HTTP_400_BAD_REQUEST)

@@ -18,5 +18,6 @@ django-storages==1.14.2
 drf-yasg==1.21.7
 django-minio-storage==0.5.7
 redis==5.0.1
+django-redis
 django-filter
 django-cors-headers
