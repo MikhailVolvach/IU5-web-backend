@@ -31,14 +31,15 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = EncryptionUserSerializer
     model_class = EncryptionUser
 
-    def get_permissions(self):
-        if self.action in ['create']:
-            permission_classes = [AllowAny]
-        elif self.action in ['list']:
-            permission_classes = [IsAdmin | IsModerator]
-        else:
-            permission_classes = [IsAdmin]
-        return [permission() for permission in permission_classes]
+    def list(self, request):
+        ssid = request.session.get('session_id')
+
+        ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
+
+        if ssid_user is None or ssid_user.role != EncryptionUser.Roles.ADMIN:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        return Response(self.serializer_class(self.queryset, many=True).data, status=status.HTTP_200_OK)
 
     def create(self, request):
         if self.model_class.objects.filter(username=request.data['username']).exists():
@@ -84,12 +85,13 @@ class UserViewSet(viewsets.ModelViewSet):
 )
 @api_view(['Post'])
 @permission_classes([AllowAny])
-@csrf_exempt
 def login_view(request, format=None):
     username = request.data.get("username")
     password = request.data.get("password")
 
     user = authenticate(request, username=username, password=password)
+
+    print(user, username, password, authenticate(request, username='mikhail', password='1234'))
     if user is not None:
         random_key = str(uuid.uuid4())
         session_storage.set(random_key, username)
@@ -99,9 +101,14 @@ def login_view(request, format=None):
 
         request.session['session_id'] = random_key
 
+        try:
+            order_id = get_object_or_404(DataEncryptionRequest, user=user, work_status=DataEncryptionRequest.Status.DRAFT).id
+        except:
+            order_id = None
+
         response = JsonResponse({
             'user': user_serializer.data, 
-            'order_id': get_object_or_404(DataEncryptionRequest, user=user, work_status=DataEncryptionRequest.Status.DRAFT).id})
+            'order_id': order_id})
         
         response.set_cookie('session_id', random_key)
 
@@ -131,8 +138,13 @@ def get_auth_user(request, format=None):
     
     ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
 
+    try:
+        order_id = get_object_or_404(DataEncryptionRequest, user=ssid_user, work_status=DataEncryptionRequest.Status.DRAFT).id
+    except:
+        order_id = None
+
     return JsonResponse({'user': EncryptionUserSerializer(ssid_user).data,
-                         'order_id': get_object_or_404(DataEncryptionRequest, user=ssid_user, work_status=DataEncryptionRequest.Status.DRAFT).id})
+                         'order_id': order_id})
 
 
 class DataList(APIView):
