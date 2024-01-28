@@ -310,19 +310,27 @@ class DataEncryptionReqItem(APIView):
 
         ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
 
-        if ssid_user.role not in [EncryptionUser.Roles.ADMIN,
-                                  EncryptionUser.Roles.MODERATOR] or not ssid_user:
+        if not ssid_user:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-        encryption_req = get_object_or_404(self.data_encryption_req_model, id=id)
+        if ssid_user.role not in [EncryptionUser.Roles.ADMIN, EncryptionUser.Roles.MODERATOR]:
+            encryption_req = get_object_or_404(self.data_encryption_req_model, id=id, work_status=DataEncryptionRequest.Status.DRAFT, user=ssid_user)
+        else:
+            encryption_req = get_object_or_404(self.data_encryption_req_model, id=id)
+
+        if not encryption_req:
+            return Response("Такой заявки не существует", status=status.HTTP_404_NOT_FOUND)
 
         serializer = self.data_encryption_req_serializer(encryption_req,
-                                                         data={"work_status": DataEncryptionRequest.Status.DELETED},
-                                                         partial=True)
+                                                         data={
+                                                            "work_status": DataEncryptionRequest.Status.DELETED,
+                                                            "formation_date": timezone.now()    
+                                                        },
+                                                        partial=True)
 
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response("Ошибка удаления заявки", status=status.HTTP_400_BAD_REQUEST)
 
@@ -352,20 +360,38 @@ def add_data_to_request(request, id, format=None):
                                                           formation_date=timezone.now(),
                                                           user_id=ssid_user.id)
 
+    try:
+        if encryption.data_item.get(id=data_item.id):
+            return Response("Услуга уже есть в заявке", status=status.HTTP_400_BAD_REQUEST)
+    except:
+        pass
+
     # Добавление в М-М таблицу записи с текущей заявкой и услугой
     data_item.dataencryptionrequest_set.add(encryption)
+
+    request_serializer = DataEncryptionRequestSerializer(encryption, data={'formation_date': timezone.now()}, partial=True)
+
+    if not request_serializer.is_valid():
+        return Response("Ошибка сериализации", status=status.HTTP_400_BAD_REQUEST)
+
+    request_serializer.save()
     return Response({
-        "request": DataEncryptionRequestSerializer(encryption).data,
-        "data": DataItemSerializer(encryption.data_item.all(), many=True).data
+        "request": request_serializer.data,
+        "data": DataItemSerializer(encryption.data_item.all(),  many=True).data
     })
 
-
+# TODO: Переделать request_body (query)
 @api_view(['Get'])
 @authentication_classes([SessionAuthentication])
 def get_encryption_reqs(request, format=None):
     ssid = request.session.get('session_id')
 
     if not ssid:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    
+    ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
+
+    if not ssid_user:
         return Response(status=status.HTTP_403_FORBIDDEN)
 
     start_date = request.GET.get('start_date')
@@ -380,12 +406,7 @@ def get_encryption_reqs(request, format=None):
         end_date = timezone.datetime.strptime(end_date, "%Y-%m-%d") + timezone.timedelta(days=1)
     else:
         end_date = timezone.datetime.max
-
-    ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
-
-    if not ssid_user:
-        return Response(status=status.HTTP_403_FORBIDDEN)
-
+    
     if ssid_user.is_staff:
         requests = DataEncryptionRequest.objects.filter(creation_date__gte=start_date, creation_date__lt=end_date)
     else:
@@ -393,7 +414,7 @@ def get_encryption_reqs(request, format=None):
                                                         user=ssid_user.id)
 
     serializer = DataEncryptionRequestSerializer(requests, many=True)
-    return Response(serializer.data)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['Delete'])
@@ -415,13 +436,19 @@ def delete_data_from_encryption_req(request, id, format=None):
             get_object_or_404(DataEncryptionRequest, work_status=DataEncryptionRequest.Status.DRAFT,
                               user=ssid_user.id))
     except:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
     encryption = DataEncryptionRequest.objects.get(work_status=DataEncryptionRequest.Status.DRAFT,
                                                        user=ssid_user.id)
 
+    request_serializer = DataEncryptionRequestSerializer(encryption, data={'formation_date': timezone.now()}, partial=True)
+
+    if not request_serializer.is_valid():
+        return Response("Ошибка сериализации", status=status.HTTP_400_BAD_REQUEST)
+
+    request_serializer.save()
     return Response({
-        "request": DataEncryptionRequestSerializer(encryption).data,
+        "request": request_serializer.data,
         "data": DataItemSerializer(encryption.data_item.all(), many=True).data
     })
 
@@ -456,7 +483,7 @@ def change_encryption_req_status(request, id, format=None):
 
     # Сформированную заявку можно только завершить, отменить или удалить
     if encryption_req.work_status == DataEncryptionRequest.Status.FORMED:
-        if request.data["work_status"] not in [DataEncryptionRequest.Status.DELETED,
+        if request.data["status"] not in [DataEncryptionRequest.Status.DELETED,
                                                DataEncryptionRequest.Status.FINALISED,
                                                DataEncryptionRequest.Status.CANCELLED]:
             return Response(data="Сформированную заявку можно только удалить, завершить или отменить",
@@ -464,7 +491,7 @@ def change_encryption_req_status(request, id, format=None):
     else:
         return Response(data='Текущая заявка не находится в статусе Сформирован', status=status.HTTP_400_BAD_REQUEST)
 
-    serializer = DataEncryptionRequestSerializer(encryption_req, data={"work_status": request.data["work_status"],
+    serializer = DataEncryptionRequestSerializer(encryption_req, data={"work_status": request.data["status"],
                                                                        "formation_date": timezone.now()}, partial=True)
 
     if serializer.is_valid():
@@ -480,8 +507,6 @@ def change_encryption_req_status(request, id, format=None):
 @authentication_classes([SessionAuthentication])
 def form_encryption_req(request, format=None):
     ssid = request.session.get('session_id')
-
-    print(ssid)
 
     if not ssid:
         return Response(status=status.HTTP_403_FORBIDDEN)
