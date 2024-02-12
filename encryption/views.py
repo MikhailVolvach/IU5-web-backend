@@ -22,6 +22,7 @@ import uuid
 from rest_framework import filters
 
 from django_filters.rest_framework import DjangoFilterBackend
+from django.utils.dateparse import parse_datetime
 
 session_storage = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
@@ -36,7 +37,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         ssid_user = EncryptionUser.objects.get(username=session_storage.get(ssid).decode('utf-8'))
 
-        if ssid_user is None or ssid_user.role != EncryptionUser.Roles.ADMIN:
+        if ssid_user is None or (ssid_user.role not in [EncryptionUser.Roles.ADMIN, EncryptionUser.Roles.MODERATOR]):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         return Response(self.serializer_class(self.queryset, many=True).data, status=status.HTTP_200_OK)
@@ -211,6 +212,7 @@ class DataListItem(APIView):
     @swagger_auto_schema(request_body=data_item_serializer)
     def put(self, request, id, format=None):
         ssid = request.session.get('session_id')
+        print(ssid)
 
         if not ssid:
             return Response(status=status.HTTP_403_FORBIDDEN)
@@ -221,7 +223,7 @@ class DataListItem(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         data_item = get_object_or_404(self.data_item_model, id=id)
-        serializer = self.data_item_serializer(data_item, data=request.data)
+        serializer = self.data_item_serializer(data_item, data=request.data, partial=True)
 
         if serializer.is_valid():
             serializer.save()
@@ -268,7 +270,11 @@ class DataEncryptionReqItem(APIView):
         if not ssid_user:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-        encryption_req = get_object_or_404(self.data_encryption_req_model, id=id, user=ssid_user)
+        if ssid_user.role == EncryptionUser.Roles.USER:
+            encryption_req = get_object_or_404(self.data_encryption_req_model, id=id, user=ssid_user)
+        else:
+            encryption_req = get_object_or_404(self.data_encryption_req_model, id=id)
+
         encryption_serializer = self.data_encryption_req_serializer(encryption_req)
         data_items_serializer = self.data_item_serializer(encryption_req.data_item.all(), many=True)
 
@@ -383,6 +389,12 @@ def add_data_to_request(request, id, format=None):
 # TODO: Переделать request_body (query)
 @api_view(['Get'])
 @authentication_classes([SessionAuthentication])
+@swagger_auto_schema(
+    manual_parameters=[
+        openapi.Parameter('start_date', openapi.IN_QUERY, type=openapi.FORMAT_DATE, required=False, description='Start date in format YYYY-MM-DD'),
+        openapi.Parameter('end_date', openapi.IN_QUERY, type=openapi.FORMAT_DATE, required=False, description='End date in format YYYY-MM-DD')
+    ]
+)
 def get_encryption_reqs(request, format=None):
     ssid = request.session.get('session_id')
 
@@ -398,12 +410,15 @@ def get_encryption_reqs(request, format=None):
     end_date = request.GET.get('end_date')
 
     if start_date:
-        start_date = timezone.datetime.strptime(start_date, "%Y-%m-%d")
+        # start_date = timezone.datetime.strptime(start_date, "%Y-%m-%d")
+        start_date = parse_datetime(start_date)
     else:
         start_date = timezone.datetime.min
 
     if end_date:
-        end_date = timezone.datetime.strptime(end_date, "%Y-%m-%d") + timezone.timedelta(days=1)
+        # end_date = timezone.datetime.strptime(end_date, "%Y-%m-%d") + timezone.timedelta(days=1)
+        end_date = parse_datetime(end_date)
+        end_date = end_date.date() + timezone.timedelta(days=1)
     else:
         end_date = timezone.datetime.max
     
