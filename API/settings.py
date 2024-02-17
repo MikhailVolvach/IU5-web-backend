@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-jntx)acjxyah^40fg5(!rdnp3c*1f6$)v&64u32-(a3suwh%@t
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '192.168.1.87', '192.168.0.191']
 
 # Application definition
 
@@ -175,7 +175,8 @@ TIME_ZONE = 'Europe/Moscow'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:3001",
-    "https://mikhailvolvach.github.io"
+    "https://mikhailvolvach.github.io",
+    "http://192.168.1.87:8000"
     # Добавьте здесь другие разрешенные источники, если необходимо
 ]
 
