@@ -348,6 +348,29 @@ body {
     font-size: 20px;
     padding: 16px 24px;
 }
+.draft_button {
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #A259FF;
+    border-radius: 100px;
+    text-decoration: none;
+    color: #ffffff;
+    font-size: 13px;
+}
+.request_info-list {
+    color: #ffffff;
+    list-style: none;
+    margin-bottom: 10px;
+    background-color: #3B3B3B;
+    border-radius: 10px;
+    width: fit-content;
+    padding: 30px;
+}
+.request_info-item {
+    margin-top: 10px;
+}
         </style>
         <link
             rel="stylesheet"
@@ -364,6 +387,7 @@ body {
                             <a href="/" class="nav__link">Главная</a>
                         </li>
                     </ul>
+                    {% block draft %}{% endblock %}
                     {% block search %}{% endblock %}
                 </nav>
             </div>

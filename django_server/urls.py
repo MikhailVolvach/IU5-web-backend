@@ -24,7 +24,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.getDataList, name='getDataList'),
     path('data/<int:id>/', views.getDataItem, name='data_item'),
-    path('data/<int:id>/delete', views.deleteDataItem, name='delete_data_item')
+    path('data/<int:id>/delete', views.deleteDataItem, name='delete_data_item'),
+    path('request/<int:id>/', views.getRequestPage, name='request-page')
 ]
 
 if settings.DEBUG:

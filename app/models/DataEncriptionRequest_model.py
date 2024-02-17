@@ -1,6 +1,5 @@
 from django.db import models
 from django.utils import timezone
-import datetime
 
 from django.contrib.auth.models import User
 
@@ -15,7 +14,7 @@ class DataEncriptionRequest(models.Model):
         CANCELLED = "Отменён"
         DELETED = "Удалён"
 
-    work_status = models.IntegerField(choices=Status.choices, default=Status.INTRODUCED)
+    work_status = models.CharField(choices=Status.choices, default=Status.INTRODUCED)
     creation_date = models.DateTimeField(default=timezone.now)
     formation_date = models.DateTimeField()
     user = models.OneToOneField(User, on_delete=models.CASCADE, default=1)

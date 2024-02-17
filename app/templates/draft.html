@@ -1,28 +1,17 @@
-{% extends 'base.html' %} {% load static %} 
-{% block title %}Encription{% endblock %} 
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{data.data_item.title}}{% endblock %}
 
-{% block draft %}
-    <a class="draft_button" href="request/{{ data.request_id }}/">Заявка</a>
-{% endblock %}
-
-{% block search %}
-<form class="nav__search search" action="{% url 'getDataList' %}" method='GET'>
-    <input
-        name="data_search"
-        type="search"
-        class="search__input"
-        placeholder="Поиск"
-        maxlength="100"
-        {% if data_search %}
-            value={{ data_search }} 
-        {% else %}
-            value=""
-        {% endif %}
-    />
-    <button class="btn btn-primary search__button">Поиск</button>
-</form>
-{% endblock %}
 {% block content %}
+<div class="request-page">
+<div class="request_info">
+    <ul class="request_info-list">
+        <h1>Информация о заявке</h1>
+        <li class="request_info-item">ИД: {{ data.request.id }}</li>
+        <li class="request_info-item">Дата создания: {{ data.request.creation_date }}</li>
+        <li class="request_info-item">Статус: {{ data.request.work_status }}</li>
+    </ul>
+</div>
 <div class="cards">
     {% for data_item in data.data_list %}
     <div class="card">
@@ -45,6 +34,9 @@
     </div>
     {% empty %}
     <p>Нет услуг</p>
-    {% endfor %} 
+    {% endfor %}
 </div>
+</div>
+
+
 {% endblock %}
