@@ -8,9 +8,19 @@ def getDataList(request):
     query = request.GET.get('data_search')
     
     if not query: query = ""
-    
+
+    # print(DataItem.objects.filter(is_deleted=False).filter(title__icontains=query).order_by('id'))
+
+    # DataItem.objects.filter(is_deleted=False).filter(title__icontains=query).order_by('id')
+
+
+    items = DataItem.objects.filter(is_deleted=False).filter(title__icontains=query).order_by('id')
+
+    for item in items:
+        item.img_url = item.img.url.replace("nginx", "localhost")
+
     return render(request, 'data_list.html', {'data': {
-        'data_list': DataItem.objects.filter(is_deleted=False).filter(title__icontains=query).order_by('id'),
+        'data_list': items,
         'data_search': query
     }})
     
@@ -20,6 +30,7 @@ def getDataItem(request, id):
         'data': {
             'id': id,
             'data_item': DataItem.objects.filter(id=id)[0],
+            'imgUrl': DataItem.objects.filter(id=id)[0].img.url.replace("nginx", "localhost"),
             'information': getDataByType(DataItem, id)
         }
     })

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -72,7 +73,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'django_server.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
@@ -81,8 +81,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'iu5_web_db',
         'USER': 'iu5_web',
-        'password': '1703',
-        'HOST': 'localhost',
+        'PASSWORD': '1703',
+        'HOST': 'db',
         'PORT': 5432,
         'TEST_CHARSET': 'utf8'
     }
@@ -122,15 +122,42 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
-STATICFILES_DIRS = [
-    BASE_DIR / "app/static",
-]
+# STATICFILES_DIRS = [
+#     BASE_DIR / "app/static",
+# ]
+#
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = BASE_DIR / "app/media"
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / "app/media"
+REDIS_HOST = os.environ.get('REDIS_HOST')
+REDIS_PORT = os.environ.get('REDIS_PORT')
 
+# STATIC_ROOT = 'staticfiles'
 
-STATIC_URL = 'static/'
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+
+SESSION_COOKIE_SECURE = False
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",  # Адрес и порт Redis
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+STATIC_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+# STATIC_FILE_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+AWS_STORAGE_BUCKET_NAME = 'api-data'     # Бакет должен уже быть создан
+AWS_ACCESS_KEY_ID = os.environ.get('MINIO_ACCESS_KEY')
+AWS_SECRET_ACCESS_KEY = os.environ.get('MINIO_SECRET_KEY')
+AWS_S3_ENDPOINT_URL = os.environ.get('MINIO_HOST')
+STATIC_URL = f'{AWS_S3_ENDPOINT_URL.replace("nginx", "localhost")}/static/'
+# STATIC_ROOT =
+STATIC_ROOT = BASE_DIR / 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

@@ -11,7 +11,7 @@
         {% if data.data_item.data_type != 'Изображение' %}
         <div class="data-item__image-container">
             <div class="data-item__image">
-                <img src="{{ data.data_item.img.url }}" alt="" class="data-item__img">
+                <img src="{{ data.imgUrl }}" alt="" class="data-item__img">
             </div>
         </div>
         {% endif %}
@@ -21,7 +21,7 @@
                 <p class="data-item__description">{{ data.information }}</p>
             {% else %}
                 <div class="data-item__content-image-container">
-                    <img src="{{ data.data_item.img.url }}" alt="" class="data-item__img">
+                    <img src="{{ data.data_item.img.url }}" alt="" class="data-item__img" id="imageElement">
                 </div>
             {% endif %}
             <p data-encripted="{% if data_item.encription_status == 'Оригинал' %}True{% else %}False{% endif %}" class="encription-status data-item__status">
